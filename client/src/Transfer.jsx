@@ -2,8 +2,7 @@ import { useState } from "react";
 import server from "./server";
 import * as secp from 'ethereum-cryptography/secp256k1';
 import { keccak256 } from "ethereum-cryptography/keccak";
-import {toHex} from 'ethereum-cryptography/utils';
-import { utf8ToBytes } from "ethereum-cryptography/utils";
+import { toHex, utf8ToBytes, hexToBytes } from "ethereum-cryptography/utils";
 
 function Transfer({ address, setBalance, privateKey }) {
   const [sendAmount, setSendAmount] = useState("");
@@ -18,28 +17,30 @@ function Transfer({ address, setBalance, privateKey }) {
 
     const txMessage = {
       sender: address,
-      amount: parseInt(amount),
+      amount: parseInt(sendAmount),
       recipient: recipient
     }
 
     //hash TX;
     const msg = JSON.stringify(txMessage);
-    console.log("Initial message", msg);
     const bytes = utf8ToBytes(msg);
-    console.log("Bytes", bytes);
-    const hashedMsg = keccak256.keccak256(bytes);
-    console.log("Hashed Nsg", hashedMsg);
-    //to Hex TX
-    const hexedMsg = toHex(hashedMsg);
-    console.log("hexedMsg", hexMessage);
+    console.log("bytes", bytes);
+    const hashedMsg = keccak256(bytes);
+    console.log("HashedMsg", hashedMsg);
+    const hexMessage = toHex(hashedMsg);
+    console.log("Hex Message", hexMessage);
     setHexMessage(hexMessage);
     //sign TX with PKey
-    const signatureArray = secp.secp256k1.sign(hexMessage, PRIVATE_KEY, 
-      {recovered: true});
-    const signature = toHex(signatureArray[0]);
-    setSignature(signature);
-    const recoveryBit = signatureArray[1];
-    setRecoveryBit(recoveryBit);
+    console.log("Private Key", privateKey);
+    const signature = secp.secp256k1.sign(hashedMsg, privateKey);
+    //const {signature, recovery} = secp.secp256k1.sign(hexMessage, privateKey);
+    console.log("signature",signature);
+    const signatureHex = signature.toCompactHex();
+    if (!signature) {
+      throw new Error("Failed to generate signature");
+    }
+    setSignature(signatureHex);
+    setRecoveryBit(signature.recovery);
   }
 
   async function transfer(evt) {
@@ -84,7 +85,7 @@ function Transfer({ address, setBalance, privateKey }) {
         ></input>
       </label>
 
-      <input type="button" className="button" value="Sign TX" onClick={signMessage}/>
+      <input type="button" className="button" value="Sign Message" onClick={signMessage}/>
       <div>
         Your TX Hash: {hexMessage}
       </div>

@@ -18,8 +18,8 @@ function Transfer({ address, setBalance, privateKey }) {
 
     const txMessage = {
       sender: address,
-      amount = amount,
-      recipient = recipient
+      amount: parseInt(amount),
+      recipient: recipient
     }
 
     //hash TX;
@@ -52,6 +52,9 @@ function Transfer({ address, setBalance, privateKey }) {
         sender: address,
         amount: parseInt(sendAmount),
         recipient,
+        signature,
+        recoveryBit,
+        hexMessage
       });
       setBalance(balance);
     } catch (ex) {
@@ -80,6 +83,17 @@ function Transfer({ address, setBalance, privateKey }) {
           onChange={setValue(setRecipient)}
         ></input>
       </label>
+
+      <input type="button" className="button" value="Sign TX" onClick={signMessage}/>
+      <div>
+        Your TX Hash: {hexMessage}
+      </div>
+      <div>
+        Your signature: {signature}
+      </div>
+      <div>
+        Your recovery Bit: {recoveryBit}
+      </div>
 
       <input type="submit" className="button" value="Transfer" />
     </form>

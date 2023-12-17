@@ -2,6 +2,9 @@ const express = require("express");
 const app = express();
 const cors = require("cors");
 const port = 3042;
+const secp = require("ethereum-cryptography/secp256k1");
+const { keccak256 } = require("ethereum-cryptography/keccak");
+const { toHex } = require("ethereum-cryptography/utils");
 
 app.use(cors());
 app.use(express.json());
@@ -23,20 +26,29 @@ app.get("/balance/:address", (req, res) => {
 
 app.post("/send", (req, res) => {
   //TODO: get a signature from the client
-  //recover the public address from the signature
 
   //const { sender, recipient, amount } = req.body;
 
   //const sender = secp.secp256k1.recoverPublicKey(signature);
   
-  const { sender, recipient, amount } = req.body;
+  const { sender, recipient, amount, signature, hexMessage, recoveryBit } = req.body;
+
+  //recover the public address from the signature
+  const sig = secp.secp256k1.Signature.fromCompact(signature);
+  const recoveredSignature = sig.addRecoveryBit(recoveryBit);
+  const publicKey = recoveredSignature.recoverPublicKey(hexMessage);
+
 
   setInitialBalance(sender);
   setInitialBalance(recipient);
 
   if (balances[sender] < amount) {
     res.status(400).send({ message: "Not enough funds!" });
-  } else {
+  } else if (sender != publicKey) {
+    res.status(400).semd({ message: "Not your wallet"})
+  }
+  
+  {
     balances[sender] -= amount;
     balances[recipient] += amount;
     res.send({ balance: balances[sender] });
